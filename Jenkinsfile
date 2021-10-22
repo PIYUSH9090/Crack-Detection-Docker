@@ -1,12 +1,71 @@
-node {
+pipeline { 
 
-    checkout scm
+    environment { 
 
-    docker.withRegistry('https://registry.hub.docker.com', 'dockerHub') {
+        registry = "piyush9090/crack-detection-docker" 
 
-        def customImage = docker.build("piyush9090/crack-detection-docker")
+        registryCredential = 'dockerHub' 
 
-        /* Push the container to the custom Registry */
-        customImage.push()
+        dockerImage = '' 
+
     }
+
+    agent any 
+
+    stages { 
+
+        stage('Cloning our Git') { 
+
+            steps { 
+
+                git 'git@github.com:PIYUSH9090/Crack-Detection-Docker.git' 
+
+            }
+
+        } 
+
+        stage('Building our image') { 
+
+            steps { 
+
+                script { 
+
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER" 
+
+                }
+
+            } 
+
+        }
+
+        stage('Deploy our image') { 
+
+            steps { 
+
+                script { 
+
+                    docker.withRegistry( '', registryCredential ) { 
+
+                        dockerImage.push() 
+
+                    }
+
+                } 
+
+            }
+
+        } 
+
+        stage('Cleaning up') { 
+
+            steps { 
+
+                sh "docker rmi $registry:$BUILD_NUMBER" 
+
+            }
+
+        } 
+
+    }
+
 }
